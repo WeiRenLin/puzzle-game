@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TODO</title>
+  <link rel="stylesheet" href="./puzzle.css" />
+</head>
+
+<body>
+  <div id="app">
+    <div class="wait">
+      <ul>
+        <li v-for="(item,index) in todoWait.content" :key="item.url">
+          <img :src="item.url" alt="" @click="handleClick(item,index)" />
+        </li>
+      </ul>
+    </div>
+    <div class="carried">
+      <ul>
+        <li v-for="(item,index) in todoOver.content" :key="item">
+          <img :src="item.url" alt="" @click="backClick(item,index)" />
+        </li>
+      </ul>
+    </div>
+    <div :class="['winPage',{open:isOpen}]">
+      <h1>闖關成功</h1>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js"></script>
+  <script src="./vue.js"></script>
+  <script>
+    const { ref, reactive, onMounted, computed, watch } = Vue;
+
+    const app = {
+      setup() {
+        // 初始化的拼圖
+        const todoWait = reactive({ content: [] })
+        //  移動過去的拼圖
+        const todoOver = reactive({ content: [] })
+        let winIdx = ref(0)
+        let isOpen = ref(false)
+        const handleClick = (item, index) => {
+          todoOver.content.push(item)
+          todoWait.content.splice(index, 1)
+        }
+
+        const backClick = (item, index) => {
+          todoWait.content.push(item)
+          todoOver.content.splice(index, 1)
+        }
+
+        watch(() => todoOver.content, (newVal) => {
+          winIdx.value = 0
+          newVal.forEach((item, idx) => {
+            // 成立的話代表他是有按照順序去增加
+            if (item.idx === idx) {
+              winIdx.value++
+            }
+          });
+        }, { deep: true })
+        watch(winIdx, (newVal) => {
+          if (newVal === 9) {
+            isOpen.value = true
+          }
+        })
+        onMounted(() => {
+          axios.get('./puzzle.json').then((res) => {
+            todoWait.content = res.data
+            todoWait.content = todoWait.content.sort(() => { return 0.5 - Math.random() })
+          })
+        })
+        return { todoWait, handleClick, todoOver, backClick, isOpen };
+      },
+    };
+    Vue.createApp(app).mount("#app");
+  </script>
+</body>
+
+</html>
